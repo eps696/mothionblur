@@ -272,3 +272,20 @@ def test_cached_file_output_job_refreshes_its_download_url(tmp_path, monkeypatch
     cached = a.run("blur-core-v1", {"strength": [0.3]})
     assert cached["cached"] is True
     assert len(calls) == n                            # no extra network call for an inline job
+
+
+def test_encoder_args_falls_back_to_libx264_without_nvenc(monkeypatch):
+    """video.py assumed an NVIDIA GPU for a while (simpler, but broke on any other machine);
+    restored as a real fallback for a public repo - check both branches directly."""
+    import video
+    video._has_nvenc.cache_clear()
+
+    monkeypatch.setattr(video.subprocess, "run", lambda *a, **k: type("R", (), {"returncode": 0})())
+    assert video._has_nvenc() is True
+    assert video._encoder_args()[:2] == ["-c:v", "h264_nvenc"]
+    video._has_nvenc.cache_clear()
+
+    monkeypatch.setattr(video.subprocess, "run", lambda *a, **k: type("R", (), {"returncode": 1})())
+    assert video._has_nvenc() is False
+    assert video._encoder_args()[:2] == ["-c:v", "libx264"]
+    video._has_nvenc.cache_clear()

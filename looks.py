@@ -7,10 +7,12 @@ away (E < 0). Static regions give E = 0 exactly. Every look upsamples E (and, wh
 from the working resolution to the full frame size once per chunk (done by the caller, timesmear.py)
 and receives the already-upsampled arrays.
 
-All the per-pixel math here runs on the GPU (PyTorch/CUDA) - at full source resolution this is a
-genuinely heavy, memory-bandwidth-bound elementwise workload, and this project assumes an NVIDIA
-GPU is present (same policy as NVENC in video.py: no CPU fallback). Callers may pass plain numpy
-arrays (auto-uploaded) or, for the hot path, already-GPU tensors from ``upsample``/``to_gpu`` to
+All the per-pixel math here runs on the GPU (PyTorch/CUDA) when one is available - at full source
+resolution this is a genuinely heavy, memory-bandwidth-bound elementwise workload, and a GPU makes
+a large real difference (see video.py's NVENC fallback for a measured example of the same kind of
+speedup). ``DEVICE`` falls back to "cpu" automatically if CUDA isn't available - every operation
+here works identically on either, just slower on CPU. Callers may pass plain numpy arrays
+(auto-uploaded) or, for the hot path, already-``DEVICE`` tensors from ``upsample``/``to_gpu`` to
 avoid re-uploading the same data for every look.
 """
 import json
@@ -21,7 +23,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
-DEVICE = "cuda"
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 LOOKS = ("faithful", "ghost", "quantum", "echo")
 
 

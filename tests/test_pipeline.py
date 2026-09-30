@@ -171,3 +171,37 @@ def test_echo_audio_params_for():
     for p in (p0, p1):
         assert 0 <= p["feedback"] < 1          # API requires exclusiveMaximum 1
         assert 1 <= p["depth"] <= 32
+
+
+def test_render_look_is_identical_on_cpu_and_gpu():
+    """looks.py assumed CUDA for a while; restored as a real fallback. A module-level detail
+    matters here: the colour-ramp constants (_WARM/_COOL) are built at import time from DEVICE,
+    so this forces a genuine fresh import under a mocked no-GPU torch, not just flipping the
+    DEVICE variable after those constants already exist on a different device."""
+    import importlib
+    import unittest.mock as mock
+
+    import torch
+
+    import looks as looks_mod
+
+    frames = np.random.default_rng(0).integers(0, 255, (8, 20, 24, 3), dtype=np.uint8)
+    echo = (np.random.default_rng(1).random((8, 20, 24)).astype(np.float32) - 0.5) * 100
+
+    with mock.patch.object(torch.cuda, "is_available", return_value=False):
+        importlib.reload(looks_mod)
+        assert looks_mod.DEVICE == "cpu"
+        cpu = {name: looks_mod.render_look(name, frames, echo, echo if name == "quantum" else None)
+              for name in looks_mod.LOOKS}
+
+    importlib.reload(looks_mod)          # back to whatever this machine actually has
+    for name in looks_mod.LOOKS:
+        gpu = looks_mod.render_look(name, frames, echo, echo if name == "quantum" else None)
+        # Not exact equality: CPU and GPU compute the same float math (cos/pow/etc.) with
+        # different implementations, so a value sitting almost exactly on a uint8 rounding
+        # boundary can land on either side of it. Measured on this fixture: 'quantum' differs
+        # by 1 grey level at 3 of 11520 pixels, every other look is bit-identical (0 diff) - a
+        # rounding artifact, not a real discrepancy, so allow it within a tight, explicit budget.
+        diff = np.abs(gpu.astype(np.int16) - cpu[name].astype(np.int16))
+        assert diff.max() <= 1, f"{name}: max diff {diff.max()} (expected <=1)"
+        assert (diff > 0).mean() < 0.01, f"{name}: {(diff > 0).mean():.4%} of pixels differ"

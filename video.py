@@ -1,4 +1,5 @@
 """ffmpeg/ffprobe helpers: read a clip into a [T,H,W,3] uint8 array, write one back."""
+import functools
 import json
 import subprocess
 from pathlib import Path
@@ -6,10 +7,28 @@ from pathlib import Path
 import numpy as np
 
 
+@functools.lru_cache(maxsize=1)
+def _has_nvenc() -> bool:
+    """True if ffmpeg can actually drive an NVIDIA GPU encoder here (checked once with a real
+    encode, not just that the build lists h264_nvenc - the driver/GPU might still be missing)."""
+    try:
+        r = subprocess.run(
+            # 256x256: h264_nvenc refuses frames below its minimum supported dimensions.
+            ["ffmpeg", "-hide_banner", "-loglevel", "error", "-f", "lavfi",
+             "-i", "color=black:s=256x256:d=0.1", "-frames:v", "1", "-c:v", "h264_nvenc",
+             "-f", "null", "-"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        return r.returncode == 0
+    except FileNotFoundError:
+        return False
+
+
 def _encoder_args() -> list[str]:
-    """NVIDIA NVENC only (no CPU fallback) - several look-videos encode in parallel, and this
-    project assumes an NVIDIA GPU is present. -cq is NVENC's constant-quality mode."""
-    return ["-c:v", "h264_nvenc", "-preset", "p5", "-rc", "vbr", "-cq", "16", "-b:v", "0"]
+    """NVENC (GPU) if available - several look-videos encode in parallel, and it's typically an
+    order of magnitude faster than software x264 - else libx264 on the CPU. -cq/-crf are each
+    encoder's own constant-quality mode, chosen to look close to visually lossless."""
+    if _has_nvenc():
+        return ["-c:v", "h264_nvenc", "-preset", "p5", "-rc", "vbr", "-cq", "16", "-b:v", "0"]
+    return ["-c:v", "libx264", "-preset", "veryfast", "-crf", "16"]
 
 
 def extract_audio(path) -> bytes | None:

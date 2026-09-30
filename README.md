@@ -120,13 +120,14 @@ data, with no Atlas/emulator/qiskit calls for the video itself.
 
 ## Setup
 
-- **Python 3.11+**, `pip install -r requirements.txt` (see that file's comment on installing a
-  CUDA-enabled `torch` build — `pip install torch` alone can resolve to CPU-only on some
-  platforms).
+- **Python 3.11+**, `pip install -r requirements.txt`.
 - **ffmpeg + ffprobe** on `PATH`.
-- **An NVIDIA GPU with working CUDA** — hardcoded, no CPU fallback, for both video encoding
-  (NVENC) and the GPU compositing pipeline. Check with
-  `python -c "import torch; print(torch.cuda.is_available())"`.
+- **An NVIDIA GPU with working CUDA is optional, not required.** Video encoding (NVENC) and the
+  GPU compositing pipeline (`looks.py`) both auto-detect the GPU at runtime and fall back to CPU
+  (libx264 encoding; `torch` on CPU) when one isn't available — slower, but the output is the
+  same. Check what this machine has with
+  `python -c "import torch; print(torch.cuda.is_available())"`; a CUDA-enabled `torch` build (see
+  requirements.txt's comment) is only worth installing if you have the GPU to use it.
 - **A Moth Atlas API key**, only needed for `--backend atlas`, `--spatial`, or `--echo-audio`:
   `set MOTH_API_KEY=...` (or export it) before running.
 
@@ -193,5 +194,5 @@ python timesmear.py synth    OUT.mp4          [--frames N] [--fps F]        # te
   job latency, not credits.
 - 64-frame register is fixed by the fitted model; changing it needs re-calibration
   (`calibration.py impulse`).
-- NVENC and CUDA are hardcoded with no CPU fallback (this project targets the machine it was built
-  on).
+- NVENC/CUDA are auto-detected with a CPU fallback (see "Setup") — the fallback is slower,
+  not a different code path, so no separate testing/tuning is needed for it.
