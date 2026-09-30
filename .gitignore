@@ -1,0 +1,16 @@
+# Runtime/scratch data: source clips, rendered outputs, Atlas job/asset cache, QC data.
+# None of it is source code, some of it can be large, and job/asset records may reference
+# a real MOTH_API_KEY-authenticated account's activity - none of this belongs in the repo.
+work/
+
+# API key (see README "Setup") - never commit this.
+env.bat
+.env
+
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Personal convenience script - hardcodes a relative path (../env.bat) specific to this
+# machine's folder layout, not portable to a standalone clone of this repo.
+run.bat

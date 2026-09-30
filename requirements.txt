@@ -1,0 +1,11 @@
+numpy
+qiskit
+Pillow
+pytest
+
+# torch (PyTorch): install a CUDA-enabled build for your GPU/driver, e.g.:
+#   pip install torch --index-url https://download.pytorch.org/whl/cu121
+# `pip install torch` alone can resolve to a CPU-only wheel on some platforms - this project
+# requires CUDA (no CPU fallback, see README "Requirements"). Check with:
+#   python -c "import torch; print(torch.cuda.is_available())"
+torch
