@@ -402,8 +402,8 @@ def build_parser():
     p.add_argument("command", choices=COMMANDS)
     p.add_argument("src", help="source video, or (relook) a saved qc.json, or (synth) the output path")
     p.add_argument("out", nargs="?", default=str(WORK / "out"), help="output prefix (render/relook)")
-    p.add_argument("--backend", default="numpy", choices=list(ENGINES) + ["atlas"],
-                   help="numpy/qiskit: free, local. atlas: real Atlas jobs, costs credits (default: numpy)")
+    p.add_argument("--backend", default="atlas", choices=list(ENGINES) + ["atlas"],
+                   help="numpy/qiskit: free, local. atlas: real Atlas jobs, costs credits (default: atlas)")
     p.add_argument("--strength", type=float, default=0.3)
     p.add_argument("--reach", type=float, default=0.55)
     p.add_argument("--style", default="x", choices=["x", "y", "xy", "yx"])

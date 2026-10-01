@@ -73,7 +73,7 @@ its Gray-code address and hence its echo pattern.
 
 ## Three interchangeable compute engines
 
-`--backend {numpy, qiskit, atlas}` (default `numpy`, so nothing bills unless you say `atlas`)
+`--backend {numpy, qiskit, atlas}` (default `atlas`, which bills credits and needs `MOTH_API_KEY`; pass `--backend numpy` for free local runs)
 selects what actually performs the rotation. All three implement the identical fitted model and
 are verified numerically interchangeable (`tests/test_engines.py` runs the same suite against
 both local engines, plus a direct cross-check on random input):
@@ -128,16 +128,16 @@ data, with no Atlas/emulator/qiskit calls for the video itself.
   same. Check what this machine has with
   `python -c "import torch; print(torch.cuda.is_available())"`; a CUDA-enabled `torch` build (see
   requirements.txt's comment) is only worth installing if you have the GPU to use it.
-- **A Moth Atlas API key**, only needed for `--backend atlas`, `--spatial`, or `--echo-audio`:
+- **A Moth Atlas API key**, needed for the default `--backend atlas`, `--spatial`, and `--echo-audio` (not for `--backend numpy|qiskit`):
   `set MOTH_API_KEY=...` (or export it) before running.
 
 ```bat
 pip install -r requirements.txt
 set MOTH_API_KEY=your-key-here
 python timesmear.py synth work\test.mp4
-python timesmear.py render work\test.mp4 work\out --split          :: free preview, backend=numpy
+python timesmear.py render work\test.mp4 work\out --backend numpy --split   :: free local preview
 python timesmear.py plan   work\test.mp4 --backend atlas            :: count real jobs first
-python timesmear.py render work\test.mp4 work\out --backend atlas --max-jobs 200
+python timesmear.py render work\test.mp4 work\out --max-jobs 200
 python timesmear.py relook work\out.qc.json work\out2 --look ghost --gain 5
 ```
 
